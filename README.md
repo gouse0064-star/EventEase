@@ -1,95 +1,76 @@
 # EventEase — Campus Event Management Platform
 
-**EventEase** is a full-stack MERN web application designed to simplify campus event management. It enables organizers to create events and allows students to register, while tracking available seats and preventing duplicate registrations.
+**Discover campus events. Register for experiences. Bring your community together.**
+
+EventEase is a full-stack web application designed to simplify campus event discovery and registration. It provides students with a central place to explore events and reserve seats, while an authenticated organizer can create and publish events.
 
 **Live Demo:** https://event-ease-eosin.vercel.app/  
-**GitHub Repository:** https://github.com/gouse0064-star/EventEase
-
----
+**Source Code:** https://github.com/gouse0064-star/EventEase
 
 ## Overview
 
-Managing college events often involves manual registrations, attendance limits, and difficulty tracking participants. EventEase provides a centralized platform for publishing events, collecting student registrations, and managing event capacity.
+Managing campus events can involve scattered announcements, manual registrations, and difficulty tracking available seats. EventEase brings these activities into one web application with a public event listing, online registration, and protected event creation.
 
 ## Features
 
-- **Event creation:** Create events with descriptions, venues, dates, registration deadlines, and participant limits.
-- **Event discovery:** Browse available campus events.
-- **Student registration:** Register for events using name, email, and student ID.
-- **Duplicate prevention:** Prevent a student from registering for the same event multiple times.
-- **Seat management:** Track event capacity and remaining seats.
-- **Input validation:** Validate event and registration data.
-- **Responsive interface:** Access the application through a modern web interface.
+- **Event discovery:** Browse campus events with descriptions, dates, venues, and seat availability.
+- **Organizer authentication:** Sign in through a dedicated organizer login.
+- **Protected event creation:** Create events through a backend endpoint secured with JSON Web Tokens (JWT).
+- **Student registration:** Submit student details to register for an event.
+- **Seat tracking:** Display remaining seats and update availability after registration.
+- **Input validation:** Validate event details, dates, capacity, and registration requirements on the backend.
+- **Full-stack deployment:** Frontend and backend are deployed separately.
 
 ## Tech Stack
 
 | Layer | Technologies |
 |---|---|
-| Frontend | React, Vite, CSS |
+| Frontend | React, Vite, JavaScript, CSS |
 | Backend | Node.js, Express.js |
-| Database | MongoDB Atlas |
-| ODM | Mongoose |
-| Icons | Lucide React |
-| Frontend deployment | Vercel |
-| Backend deployment | Render |
-| Version control | Git and GitHub |
+| Database | MongoDB, Mongoose |
+| Authentication | bcryptjs, JSON Web Tokens (JWT) |
+| Deployment | Vercel (frontend), Render (backend) |
 
 ## Architecture
 
 ```text
-User
-  |
-  v
-React Frontend (Vite)
-  |
-  | HTTP / REST API
-  v
-Express.js + Node.js Backend
-  |
-  v
-MongoDB Atlas
-  |
-  +-- Events
-  +-- Users
-  +-- Registrations
+Student / Organizer
+        |
+        v
+ React Frontend (Vercel)
+        |
+        v
+ Express REST API (Render)
+        |
+        +---- Organizer authentication
+        |
+        +---- Event management
+        |
+        +---- Student registration
+        |
+        v
+ MongoDB Atlas
 ```
 
-## Project Structure
+The React frontend communicates with the Express backend through REST API endpoints. MongoDB stores event and registration data. Organizer credentials are verified on the backend, and a signed JWT is required for protected event creation.
 
-```text
-EventEase/
-├── client/
-│   ├── public/
-│   ├── src/
-│   │   ├── App.jsx
-│   │   ├── App.css
-│   │   └── main.jsx
-│   ├── package.json
-│   └── vite.config.js
-├── server/
-│   ├── models/
-│   │   ├── Event.js
-│   │   ├── User.js
-│   │   └── Registration.js
-│   ├── routes/
-│   │   ├── events.js
-│   │   └── registrations.js
-│   ├── server.js
-│   ├── package.json
-│   └── .env.example
-├── .gitignore
-└── README.md
-```
+## Main API Endpoints
 
-## Getting Started
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/api/events` | Retrieve the event list |
+| GET | `/api/events/:id` | Retrieve a specific event |
+| POST | `/api/auth/login` | Authenticate the organizer |
+| POST | `/api/events` | Create an event (organizer authentication required) |
+| POST | `/api/events/:id/register` | Register for an event |
+
+## Run Locally
 
 ### Prerequisites
 
-Install the following:
-
 - Node.js and npm
+- A MongoDB database or MongoDB Atlas connection
 - Git
-- A MongoDB Atlas database, or another compatible MongoDB instance
 
 ### 1. Clone the repository
 
@@ -105,24 +86,25 @@ cd server
 npm install
 ```
 
-Create a `.env` file inside the `server` directory:
+Create `server/.env` using your own local configuration:
 
 ```env
 PORT=5000
 MONGODB_URI=your_mongodb_connection_string
+ORGANIZER_USERNAME=your_organizer_username
+ORGANIZER_PASSWORD_HASH=your_bcrypt_hash
+JWT_SECRET=your_random_secret
 ```
 
-Replace the placeholder with your MongoDB connection string. Never commit your real `.env` file or database credentials.
+Generate the bcrypt hash and JWT secret securely. Never commit the actual `.env` file or real credentials.
 
-### 3. Start the backend
+Start the backend:
 
 ```bash
 npm start
 ```
 
-The backend should run at `http://localhost:5000`.
-
-### 4. Configure the frontend
+### 3. Configure the frontend
 
 Open another terminal:
 
@@ -131,66 +113,48 @@ cd client
 npm install
 ```
 
-Create a `.env.local` file inside `client`:
+Create `client/.env`:
 
 ```env
 VITE_API_URL=http://localhost:5000/api
 ```
 
-### 5. Start the frontend
+Start the frontend:
 
 ```bash
 npm run dev
 ```
 
-Open the local URL displayed by Vite, usually `http://localhost:5173`.
+Open the local URL displayed by Vite.
 
-## API Endpoints
+## Security Considerations
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| GET | `/` | Check backend status |
-| GET | `/api/events` | Retrieve events |
-| GET | `/api/events/:id` | Retrieve a specific event |
-| POST | `/api/events` | Create an event |
-| POST | `/api/events/:id/register` | Register a student for an event |
-
-## Deployment
-
-- **Frontend:** [EventEase on Vercel](https://event-ease-eosin.vercel.app/)
-- **Backend:** Deployed on Render
-- **Database:** MongoDB Atlas
-
-The deployed frontend uses the `VITE_API_URL` environment variable to connect to the backend API.
+- Organizer credentials are verified on the backend.
+- Password verification uses bcrypt.
+- Protected event creation requires a valid JWT.
+- Sensitive configuration is stored in environment variables.
+- Public event browsing and student registration remain accessible without organizer login.
 
 ## Future Improvements
 
-- Authentication and role-based access for organizers and students
-- Organizer dashboard and participant management
-- Event editing and cancellation
-- Waitlists for full events
-- Email confirmations and reminders
+- Multiple organizer accounts and role-based permissions
+- Student accounts and registration history
+- Event editing, cancellation, and organizer dashboards
 - Search, filters, and event categories
-- Automated testing and improved production monitoring
+- Email confirmations and reminders
+- Automated tests and CI/CD checks
 
-## Learning Outcomes
+## What I Learned
 
-This project provided practical experience with:
+Building EventEase provided practical experience with React frontend development, REST API design, MongoDB integration, backend validation, authentication, protected routes, environment configuration, and full-stack deployment.
 
-- Building a full-stack MERN application
-- Designing REST APIs
-- Modeling data with MongoDB and Mongoose
-- Integrating a React frontend with a backend API
-- Implementing registration validation and seat tracking
-- Deploying a web application using Vercel, Render, and MongoDB Atlas
-- Using Git and GitHub for version control
+It also highlighted the importance of testing the deployed application—not just the local version—including authentication, event creation, registration, and access control.
 
-## Author
+## Project Links
 
-**MD Gouse**
-
-GitHub: [@gouse0064-star](https://github.com/gouse0064-star)
+- **Live application:** https://event-ease-eosin.vercel.app/
+- **GitHub repository:** https://github.com/gouse0064-star/EventEase
 
 ---
 
-*EventEase — Bringing campus communities together.*
+*Built as a full-stack campus event management project.*
