@@ -20,6 +20,11 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [organizerToken, setOrganizerToken] = useState(
+    () => sessionStorage.getItem("eventeaseOrganizerToken") || ""
+  );
+  const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -62,6 +67,44 @@ function App() {
     loadEvents();
   }, []);
 
+  async function loginOrganizer(e) {
+    e.preventDefault();
+    setBusy(true);
+    setNotice("");
+
+    try {
+      const response = await fetch(`${API}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(loginForm),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Organizer login failed.");
+      }
+
+      sessionStorage.setItem("eventeaseOrganizerToken", data.token);
+      setOrganizerToken(data.token);
+      setLoginForm({ username: "", password: "" });
+      setShowLogin(false);
+      setShowCreate(true);
+      setNotice("Organizer login successful.");
+    } catch (err) {
+      setNotice(err.message || "Unable to log in.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function logoutOrganizer() {
+    sessionStorage.removeItem("eventeaseOrganizerToken");
+    setOrganizerToken("");
+    setShowCreate(false);
+    setShowLogin(false);
+    setNotice("You have been logged out.");
+  }
+
   async function createEvent(e) {
     e.preventDefault();
     setBusy(true);
@@ -70,7 +113,10 @@ function App() {
     try {
       const response = await fetch(`${API}/events`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${organizerToken}`,
+        },
         body: JSON.stringify({
           ...eventForm,
           capacity: Number(eventForm.capacity),
@@ -98,6 +144,10 @@ function App() {
       });
       await loadEvents();
     } catch (err) {
+      if (err.message && /login|token|organizer|unauthorized|expired/i.test(err.message)) {
+        sessionStorage.removeItem("eventeaseOrganizerToken");
+        setOrganizerToken("");
+      }
       setNotice(err.message || "Something went wrong.");
     } finally {
       setBusy(false);
@@ -157,9 +207,18 @@ function App() {
 
         <nav>
           <a href="#events">Explore events</a>
+          {organizerToken && (
+            <button className="secondary-button" onClick={logoutOrganizer}>
+              Log out
+            </button>
+          )}
           <button className="primary-button" onClick={() => {
             setNotice("");
-            setShowCreate(true);
+            if (organizerToken) {
+              setShowCreate(true);
+            } else {
+              setShowLogin(true);
+            }
           }}>
             <Plus size={17} /> Create event
           </button>
@@ -231,7 +290,10 @@ function App() {
               <CalendarDays size={36} />
               <h3>No events yet</h3>
               <p>Create the first event and get your campus community involved.</p>
-              <button className="primary-button" onClick={() => setShowCreate(true)}>
+              <button className="primary-button" onClick={() => {
+                if (organizerToken) setShowCreate(true);
+                else setShowLogin(true);
+              }}>
                 <Plus size={17} /> Create an event
               </button>
             </div>
@@ -287,29 +349,59 @@ function App() {
         <span>Built with MERN</span>
       </footer>
 
-      {(showCreate || selectedEvent) && (
+      {(showCreate || showLogin || selectedEvent) && (
         <div className="modal-backdrop" onClick={() => {
           setShowCreate(false);
+          setShowLogin(false);
           setSelectedEvent(null);
         }}>
           <section className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-heading">
               <div>
                 <span className="eyebrow">
-                  {showCreate ? "GROW YOUR COMMUNITY" : "SAVE YOUR SPOT"}
+                  {showLogin ? "ORGANIZER ACCESS" : showCreate ? "GROW YOUR COMMUNITY" : "SAVE YOUR SPOT"}
                 </span>
-                <h2>{showCreate ? "Create an event" : "Register for event"}</h2>
+                <h2>{showLogin ? "Organizer login" : showCreate ? "Create an event" : "Register for event"}</h2>
                 {selectedEvent && <p>{selectedEvent.title}</p>}
               </div>
               <button className="close-button" onClick={() => {
                 setShowCreate(false);
+                setShowLogin(false);
                 setSelectedEvent(null);
               }} aria-label="Close">
                 <X size={21} />
               </button>
             </div>
 
-            {showCreate ? (
+            {showLogin ? (
+              <form onSubmit={loginOrganizer} className="form">
+                <p className="form-hint">
+                  Sign in with the organizer credentials to create campus events.
+                </p>
+                <label>Username
+                  <input
+                    required
+                    autoComplete="username"
+                    value={loginForm.username}
+                    onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                    placeholder="Organizer username"
+                  />
+                </label>
+                <label>Password
+                  <input
+                    required
+                    type="password"
+                    autoComplete="current-password"
+                    value={loginForm.password}
+                    onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                    placeholder="Organizer password"
+                  />
+                </label>
+                <button className="primary-button submit-button" disabled={busy}>
+                  {busy ? "Signing in..." : "Log in"} <ArrowRight size={17} />
+                </button>
+              </form>
+            ) : showCreate ? (
               <form onSubmit={createEvent} className="form">
                 <label>Event title
                   <input required maxLength="120" value={eventForm.title}

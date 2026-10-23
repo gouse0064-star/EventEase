@@ -1,4 +1,4 @@
-
+const authRoutes = require("./routes/auth");
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
@@ -22,6 +22,7 @@ app.get("/", (req, res) => {
 });
 
 // API routes
+app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api", registrationRoutes);
 

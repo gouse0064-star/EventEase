@@ -1,4 +1,4 @@
-
+const requireOrganizer = require("../middleware/requireOrganizer");
 const express = require("express");
 const mongoose = require("mongoose");
 const Event = require("../models/Event");
@@ -53,7 +53,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // POST /api/events — create event
-router.post("/", async (req, res) => {
+router.post("/", requireOrganizer, async (req, res) => {
   try {
     const {
       title,
